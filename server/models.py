@@ -4,7 +4,7 @@ from sqlalchemy.orm import validates
 
 db = SQLAlchemy()
 
-class Pizza(db.model, SerializerMixin):
+class Pizza(db.Model, SerializerMixin):
     __tablename__ = 'pizzas'
     serialize_rules = ('-restaurants.pizza', '-restaurant.pizzas')
 
@@ -14,26 +14,26 @@ class Pizza(db.model, SerializerMixin):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
-    restaurants = db.relationship('RestaurantsPizza', back_populates='pizza')
+    restaurants = db.relationship('RestaurantPizza', back_populates='pizza')
 
-class Restaurants(db.Model, SerializerMixin):
+class Restaurant(db.Model, SerializerMixin):
     __tablename__ = 'restaurants'
-    serialize_rules = ('-pizzas.restaurants', '-restaurant.pizzas')
+    serialize_rules = ('-pizza.restaurants', '-restaurant_pizzas')
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     address = db.Column(db.String)
 
-    restaurant_pizzas = db.relationship('RestaurantsPizzas', back_populates='restaurant')
+    restaurant_pizzas = db.relationship('RestaurantPizza', back_populates='restaurant')
 
     @validates("name")
     def validate_name(self, key, name):
         if name and len(name) > 50:
-            raise ValueError("Name must be at least 50 characters in length")
+            raise ValueError("Name must be at most 50 characters in length")
         return name
-    
+
 class RestaurantPizza(db.Model):
-     __tablename__ = 'restaurant_pizzas'
+    __tablename__ = 'restaurant_pizzas'
     serialize_rules = ('restaurant', 'pizza')
 
     id = db.Column(db.Integer, primary_key=True)
@@ -42,13 +42,12 @@ class RestaurantPizza(db.Model):
     price = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
-    
 
-    restaurant = db.relationship('Restaurant', back_populates='pizzas')
+    restaurant = db.relationship('Restaurant', back_populates='restaurant_pizzas')
     pizza = db.relationship('Pizza', back_populates='restaurants')
 
     @validates('price')
     def validate_price(self, key, value):
         if not (1 <= value <= 30):
-            raise ValueError ("Price must be between 1 and 30")
+            raise ValueError("Price must be between 1 and 30")
         return value
